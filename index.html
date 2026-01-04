@@ -1,9 +1,17 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="fr" class="dark">
   <head>
     <meta charset="UTF-8" />
+    <!-- Correction : Viewport standard pour l'accessibilité -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BioLink - Identité Numérique</title>
+    
+    <title>BioLink RDC | Votre identité numérique centralisée</title>
+    <meta name="description" content="Créez votre page de liens professionnelle en 1 minute. Idéal pour les créateurs et entrepreneurs en RDC." />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -11,77 +19,66 @@
         theme: {
           extend: {
             colors: {
+              glass: {
+                50: 'rgba(255, 255, 255, 0.05)',
+                100: 'rgba(255, 255, 255, 0.1)',
+                200: 'rgba(255, 255, 255, 0.2)',
+              },
+              brand: {
+                primary: '#6366f1',
+                secondary: '#a855f7',
+                accent: '#22d3ee',
+              },
               space: {
-                900: '#0B1D3A', // Deep Blue
-                800: '#152C52',
-                700: '#1E3A8A',
-              },
-              nebula: {
-                500: '#6A1B9A', // Purple
-                400: '#8E24AA',
-              },
-              cosmic: {
-                500: '#EC407A', // Pink
-                400: '#F06292',
-              },
-              starlight: '#F5F5F5',
-            },
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
+                950: '#030712',
+                900: '#0B1D3A',
+                800: '#111827',
+              }
             },
             animation: {
+              'gradient': 'gradient 8s linear infinite',
               'float': 'float 6s ease-in-out infinite',
-              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
             },
             keyframes: {
+              gradient: {
+                '0%, 100%': { 'background-size': '200% 200%', 'background-position': 'left center' },
+                '50%': { 'background-size': '200% 200%', 'background-position': 'right center' },
+              },
               float: {
                 '0%, 100%': { transform: 'translateY(0)' },
-                '50%': { transform: 'translateY(-10px)' },
+                '50%': { transform: 'translateY(-15px)' },
               }
             }
           },
         },
       }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
     <style>
+      :root {
+        --glass-border: rgba(255, 255, 255, 0.1);
+      }
       body {
         font-family: 'Inter', sans-serif;
-        background-color: #0B1D3A;
-        color: #F5F5F5;
+        background: radial-gradient(circle at top right, #1e1b4b, #030712);
+        color: #f9fafb;
+        min-height: 100vh;
       }
-      /* Custom Scrollbar */
-      ::-webkit-scrollbar {
-        width: 8px;
+      
+      .glass-card {
+        background: rgba(255, 255, 255, 0.03);
+        /* Correction : Ordre des préfixes CSS */
+        -webkit-backdrop-filter: blur(16px);
+        backdrop-filter: blur(16px);
+        border: 1px solid var(--glass-border);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
       }
-      ::-webkit-scrollbar-track {
-        background: #0B1D3A;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #152C52;
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #6A1B9A;
-      }
+
+      ::-webkit-scrollbar { width: 0px; background: transparent; }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
-    "recharts": "https://aistudiocdn.com/recharts@^3.5.0",
-    "qrcode": "https://aistudiocdn.com/qrcode@^1.5.4",
-    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.6"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
-</head>
+  </head>
   <body>
     <div id="root"></div>
-  <script type="module" src="/index.tsx"></script>
-</body>
+    <script type="module" src="/index.tsx"></script>
+  </body>
 </html>

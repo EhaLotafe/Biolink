@@ -72,6 +72,17 @@ create table public.link_clicks (
   created_at timestamptz default now()
 );
 
+-- 3. Table Analytics (C'est elle qui remplace les Mocks)
+CREATE TABLE analytics (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  profile_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+  link_id uuid REFERENCES links(id) ON DELETE CASCADE, -- NULL si c'est une vue de profil
+  event_type text NOT NULL, -- 'view' ou 'click'
+  device text, -- 'mobile' ou 'desktop'
+  country text DEFAULT 'RDC',
+  created_at timestamp with time zone DEFAULT now()
+);
+
 -- themes : thèmes (utilitaire)
 create table public.themes (
   id serial primary key,
