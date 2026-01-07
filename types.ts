@@ -18,6 +18,9 @@ export interface LinkItem {
   clicks: number;
   position: number;    // ✅ AJOUTÉ : Pour la gestion de l'ordre des liens
   is_priority?: boolean; // ✨ Pour l'animation spéciale Premium
+  password?: string | null;        // ✅ Ajoute ça
+  scheduled_start?: string | null; // ✅ Ajoute ça
+  scheduled_end?: string | null;   // ✅ Ajoute ça
 }
 
 /**

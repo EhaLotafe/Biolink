@@ -3,108 +3,77 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Check, Star, X, Smartphone, Zap, Loader2, 
-  ShieldCheck, ArrowLeft, ArrowRight, Lock 
+  ShieldCheck, ArrowLeft, ArrowRight, Lock, Copy
 } from 'lucide-react';
 import { useNotify } from './ToastContext';
+import { supabase } from '../supabaseClient';
 
-// Déclaration pour TypeScript (CinetPay est injecté via index.html)
-declare global {
-  interface Window {
-    CinetPay: any;
-  }
-}
+// Déclaration pour CinetPay (Optionnel si tu l'utilises plus tard)
+declare global { interface Window { CinetPay: any; } }
 
 interface PremiumModalProps {
-  user: any; // On passe l'utilisateur pour les infos de paiement
+  user: any;
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
 
 const PremiumModal: React.FC<PremiumModalProps> = ({ user, isOpen, onClose, onSuccess }) => {
-  const [step, setStep] = useState<'plan' | 'payment' | 'processing'>('plan');
+  const [step, setStep] = useState<'plan' | 'payment' | 'manual-confirm'>('plan');
   const [method, setMethod] = useState<'Mpesa' | 'Airtel' | 'Orange'>('Mpesa');
   const [selectedPlanId, setSelectedPlanId] = useState<'monthly' | 'yearly'>('monthly');
-  const [phone, setPhone] = useState('');
+  const [paymentRef, setPaymentRef] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
   const { showToast } = useNotify();
 
+  // TES NUMÉROS POUR RECEVOIR L'ARGENT
+  const MERCHANT_NUMBERS = {
+    Mpesa: "0810000000 (EHA LOTAFE)",
+    Airtel: "0990000000 (OVERCOME SOLUTIONS)",
+    Orange: "0890000000 (EHA LOTAFE)"
+  };
+
   const plans = [
-    { id: 'monthly', name: 'Pack Mensuel', price: '5.000', priceInt: 5000, period: 'FC / mois', desc: 'Boostez votre visibilité digitale' },
-    { id: 'yearly', name: 'Pack Annuel', price: '55.000', priceInt: 55000, period: 'FC / an', desc: '2 mois offerts + Badge Gold 🎁', popular: true },
+    { id: 'monthly', name: 'Pack Mensuel', price: '5.000', priceInt: 5000, period: 'FC / mois', desc: 'Boostez votre visibilité' },
+    { id: 'yearly', name: 'Pack Annuel', price: '55.000', priceInt: 55000, period: 'FC / an', desc: '2 mois gratuits + Badge VIP 🎁', popular: true },
   ];
 
   const currentPlan = plans.find(p => p.id === selectedPlanId) || plans[0];
 
-  const validateDRCPhone = (num: string) => {
-    const drcRegex = /^(081|082|084|085|089|090|097|098|099)\d{7}$/;
-    return drcRegex.test(num);
-  };
-
-  const handleProcessPayment = () => {
-    if (!validateDRCPhone(phone)) {
-      showToast("Numéro RDC invalide (ex: 0812345678)", "warning");
-      return;
-    }
-
-    if (!window.CinetPay) {
-      showToast("Erreur de chargement du service de paiement", "error");
+  // LOGIQUE DE VALIDATION MANUELLE (V3)
+  const handleManualPaymentSubmit = async () => {
+    if (paymentRef.length < 5) {
+      showToast("Veuillez entrer une référence de transaction valide", "warning");
       return;
     }
 
     setIsLoading(true);
-
     try {
-      // 1. Configurer CinetPay
-      window.CinetPay.setConfig({
-        apikey: import.meta.env.VITE_CINETPAY_API_KEY, // Assure-toi de l'avoir dans .env
-        site_id: import.meta.env.VITE_CINETPAY_SITE_ID, // Assure-toi de l'avoir dans .env
-        notify_url: 'https://wdhafioitebyswlyffdo.supabase.co/functions/v1/payment-webhook',
-        mode: 'PRODUCTION'
-      });
+      // On met à jour l'utilisateur dans Supabase avec la référence
+      const { error } = await supabase
+        .from('users')
+        .update({ 
+          payment_status: 'pending', 
+          payment_ref: paymentRef.trim() 
+        })
+        .eq('id', user.id);
 
-      // 2. Lancer le checkout
-      window.CinetPay.getCheckout({
-        transaction_id: `PRO-${user.id.slice(0, 8)}-${Date.now()}`,
-        amount: currentPlan.priceInt,
-        currency: 'CDF',
-        channels: 'ALL',
-        description: `BioLink Pro - ${user.username}`,
-        customer_name: user.displayName || user.username,
-        customer_surname: "User",
-        customer_phone_number: phone,
-        customer_email: user.email || 'contact@biolink.cd',
-        customer_address: "Kinshasa",
-        customer_city: "Kinshasa",
-        customer_country: "CD",
-        customer_state: "CD",
-        customer_zip_code: "00243",
-      });
+      if (error) throw error;
 
-      // 3. Réponse du guichet
-      window.CinetPay.waitResponse((data: any) => {
-        if (data.status === "ACCEPTED") {
-          showToast("Paiement validé ! Votre profil passe en PRO.", "success");
-          onSuccess();
-        } else {
-          showToast("Le paiement n'a pas pu être finalisé.", "error");
-          setStep('payment');
-        }
-        setIsLoading(false);
-      });
-
-      window.CinetPay.onError((data: any) => {
-        console.error(data);
-        showToast("Erreur lors de l'ouverture du guichet", "error");
-        setIsLoading(false);
-      });
-
+      showToast("Preuve envoyée ! Validation par HQ Admin sous 2h.", "success");
+      onSuccess(); // Ferme la modal et affiche la bannière d'attente sur le Dashboard
     } catch (err) {
-      console.error(err);
-      showToast("Erreur technique de paiement", "error");
+      showToast("Erreur lors de l'envoi de la preuve", "error");
+    } finally {
       setIsLoading(false);
     }
+  };
+
+  const copyToClipboard = (text: string) => {
+    const phone = text.split(' ')[0];
+    navigator.clipboard.writeText(phone);
+    showToast(`Numéro ${method} copié !`);
   };
 
   return (
@@ -125,48 +94,38 @@ const PremiumModal: React.FC<PremiumModalProps> = ({ user, isOpen, onClose, onSu
 
             {!isLoading && (
               <div className="flex justify-between items-center p-8 pb-0">
-                {step === 'payment' ? (
-                  <button onClick={() => setStep('plan')} className="flex items-center gap-2 text-slate-400 hover:text-white transition-all font-bold text-xs uppercase tracking-widest">
+                {step !== 'plan' ? (
+                  <button onClick={() => setStep(step === 'manual-confirm' ? 'payment' : 'plan')} className="flex items-center gap-2 text-slate-400 hover:text-white transition-all font-bold text-xs uppercase tracking-widest">
                     <ArrowLeft size={16} /> Retour
                   </button>
                 ) : <div />}
-                <button 
-                      onClick={onClose} 
-                      className="absolute top-8 right-8 text-slate-500 hover:text-white transition-all p-2 hover:bg-white/5 rounded-full"
-                      aria-label="Fermer la fenêtre de paiement" // ✅ Correction Accessibilité
-                      title="Fermer"                             // ✅ Correction Accessibilité
-                    >
-                      <X size={20} />
-                    </button>
+                <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-slate-500 hover:text-white transition-all" aria-label="Fermer" title="Fermer">
+                  <X size={24} />
+                </button>
               </div>
             )}
 
             <div className="p-8 md:p-12 md:pt-6">
+              
+              {/* ÉTAPE 1 : CHOIX DU PLAN */}
               {step === 'plan' && (
                 <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
                   <div className="text-center space-y-2">
                     <div className="inline-flex p-3 bg-indigo-500/10 rounded-2xl text-indigo-400 mb-2">
                       <Star fill="currentColor" size={28} />
                     </div>
-                    <h2 className="text-3xl font-black text-white tracking-tighter">BioLink Pro</h2>
-                    <p className="text-slate-400 text-sm font-medium">Débloquez la puissance illimitée</p>
+                    <h2 className="text-3xl font-black text-white tracking-tighter text-center">Passez au BioLink Pro</h2>
+                    <p className="text-slate-400 text-sm font-medium">Rejoignez l'élite des créateurs en RDC</p>
                   </div>
 
                   <div className="grid grid-cols-1 gap-4">
                     {plans.map((plan) => (
                       <button 
                         key={plan.id}
-                        onClick={() => {
-                          setSelectedPlanId(plan.id as any);
-                          setStep('payment');
-                        }}
+                        onClick={() => { setSelectedPlanId(plan.id as any); setStep('payment'); }}
                         className={`relative p-6 rounded-[28px] border-2 text-left transition-all duration-300 group ${selectedPlanId === plan.id ? 'border-indigo-600 bg-indigo-600/5' : 'border-white/5 bg-white/5 hover:border-white/10'}`}
                       >
-                        {plan.popular && (
-                          <div className="absolute -top-3 right-8 bg-indigo-600 text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-[0.2em] shadow-lg">
-                            MEILLEUR CHOIX
-                          </div>
-                        )}
+                        {plan.popular && <div className="absolute -top-3 right-8 bg-indigo-600 text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-[0.2em] shadow-lg">MEILLEUR CHOIX</div>}
                         <div className="flex justify-between items-center">
                           <div>
                             <p className="font-bold text-white text-lg">{plan.name}</p>
@@ -182,7 +141,7 @@ const PremiumModal: React.FC<PremiumModalProps> = ({ user, isOpen, onClose, onSu
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 pt-2">
-                    {['Liens illimités', 'Badge Vérifié', 'Stats Pro', 'Thèmes VIP', 'WhatsApp Direct', 'Zéro Pub'].map(f => (
+                    {['Liens illimités', 'Badge Vérifié', 'Mise en avant', 'Thèmes VIP', 'WhatsApp Pro', 'Analytics Villes'].map(f => (
                       <div key={f} className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-tight">
                         <div className="bg-indigo-500/20 p-0.5 rounded-full"><Check size={12} className="text-indigo-400 stroke-[4px]" /></div> {f}
                       </div>
@@ -191,11 +150,12 @@ const PremiumModal: React.FC<PremiumModalProps> = ({ user, isOpen, onClose, onSu
                 </div>
               )}
 
+              {/* ÉTAPE 2 : MODE DE PAIEMENT */}
               {step === 'payment' && (
-                <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-                  <div className="text-center space-y-2">
+                <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500 text-center">
+                  <div className="space-y-2">
                     <h3 className="text-2xl font-black text-white tracking-tighter">Mode de paiement</h3>
-                    <p className="text-slate-400 text-sm">Paiement 100% sécurisé (RDC)</p>
+                    <p className="text-slate-400 text-sm">Sélectionnez votre opérateur Mobile Money</p>
                   </div>
                   
                   <div className="grid grid-cols-3 gap-3">
@@ -213,30 +173,67 @@ const PremiumModal: React.FC<PremiumModalProps> = ({ user, isOpen, onClose, onSu
                     ))}
                   </div>
 
+                  <div className="bg-indigo-600/10 p-6 rounded-[32px] border border-indigo-500/20 space-y-4">
+                    <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest">Instructions de transfert</p>
+                    <div className="space-y-1">
+                        <p className="text-slate-400 text-sm">Effectuez le transfert de <span className="text-white font-bold">{currentPlan.price} FC</span> au :</p>
+                        <h4 className="text-xl font-black text-white">{MERCHANT_NUMBERS[method]}</h4>
+                    </div>
+                    <button 
+                        onClick={() => copyToClipboard(MERCHANT_NUMBERS[method])}
+                        className="flex items-center gap-2 mx-auto px-4 py-2 bg-white/5 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-white/10 transition-all"
+                    >
+                        <Copy size={14} /> Copier le numéro
+                    </button>
+                  </div>
+
+                  <button 
+                    onClick={() => setStep('manual-confirm')}
+                    className="w-full py-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-[24px] font-black text-sm uppercase tracking-[0.2em] shadow-2xl transition-all"
+                  >
+                    J'ai effectué le transfert <ArrowRight size={18} className="inline ml-2" />
+                  </button>
+                </div>
+              )}
+
+              {/* ÉTAPE 3 : CONFIRMATION MANUELLE (Réf SMS) */}
+              {step === 'manual-confirm' && (
+                <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+                  <div className="text-center space-y-2">
+                    <h3 className="text-2xl font-black text-white tracking-tighter">Confirmation</h3>
+                    <p className="text-slate-400 text-sm">Entrez la référence du message reçu</p>
+                  </div>
+
                   <div className="space-y-6">
                     <div className="space-y-2">
-                      <div className="flex justify-between items-center px-1">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Numéro de téléphone</label>
-                        <span className="text-[10px] font-bold text-indigo-400">{currentPlan.price} FC</span>
-                      </div>
+                      <label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">ID de Transaction (Reçu par SMS)</label>
                       <input 
-                        type="tel" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-                        placeholder="081 234 5678"
-                        className="w-full bg-white/5 border border-white/10 p-5 rounded-[24px] text-white text-xl font-black outline-none focus:border-indigo-500 transition-all"
-                        maxLength={10}
+                        type="text" 
+                        value={paymentRef}
+                        onChange={(e) => setPaymentRef(e.target.value)}
+                        placeholder="Ex: 1234567890"
+                        className="w-full bg-white/5 border border-white/10 p-5 rounded-[24px] text-white text-xl font-black outline-none focus:border-indigo-500 transition-all placeholder:text-white/5"
                       />
                     </div>
 
+                    <div className="p-5 bg-emerald-500/5 rounded-[24px] border border-emerald-500/10 flex items-start gap-4">
+                      <ShieldCheck className="text-emerald-500 mt-1" size={20}/>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        Dès validation de votre référence par nos services, votre compte passera en <span className="text-white font-bold text-xs">PRO</span> et vous recevrez un message de confirmation sur votre Dashboard.
+                      </p>
+                    </div>
+
                     <button 
-                      onClick={handleProcessPayment}
-                      disabled={phone.length < 10 || isLoading}
+                      onClick={handleManualPaymentSubmit}
+                      disabled={isLoading}
                       className="w-full py-5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 text-white rounded-[24px] font-black text-sm uppercase tracking-[0.2em] shadow-2xl flex items-center justify-center gap-3"
                     >
-                      {isLoading ? <Loader2 className="animate-spin" /> : <>Confirmer le paiement <ArrowRight size={18} /></>}
+                      {isLoading ? <Loader2 className="animate-spin" /> : "Vérifier mon paiement"}
                     </button>
                   </div>
                 </div>
               )}
+
             </div>
           </motion.div>
         </div>

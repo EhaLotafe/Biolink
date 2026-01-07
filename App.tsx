@@ -13,12 +13,16 @@ import PublicProfile from './components/PublicProfile';
 import About from './components/About';
 import LegalPages from './components/LegalPages';
 import { useNotify } from './components/ToastContext';
+import AdminPanel from './components/AdminPanel';
+
+
 
 function App() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { showToast } = useNotify();
+  const ADMIN_ID = "9087064c-864c-41cf-b6ad-ec9aa08a1cb8";
 
   // Stabilisation de la fonction de récupération du profil
   const fetchUserProfile = useCallback(async (userId: string) => {
@@ -90,7 +94,13 @@ function App() {
 
   return (
     <Router>
-      <Routes>
+      <Routes>      
+              <Route 
+        path="/admin-overcome" 
+        element={
+          session?.user.id === ADMIN_ID ? <AdminPanel /> : <Navigate to="/" />
+        } 
+      />
         {/* Routes Publiques */}
         <Route path="/" element={<Landing />} />
         <Route path="/about" element={<About />} />
