@@ -29,9 +29,9 @@ const PremiumModal: React.FC<PremiumModalProps> = ({ user, isOpen, onClose, onSu
 
   // TES NUMÉROS POUR RECEVOIR L'ARGENT
   const MERCHANT_NUMBERS = {
-    Mpesa: "0810000000 (EHA LOTAFE)",
-    Airtel: "0990000000 (OVERCOME SOLUTIONS)",
-    Orange: "0890000000 (EHA LOTAFE)"
+    Mpesa: "0817517378 (Manasse LOTAFE)",
+    Airtel: "0993033321 (Jhon Mangobe == OVERCOME SOLUTIONS)",
+    Orange: "0890000000 (Pas encore disponible)"
   };
 
   const plans = [
