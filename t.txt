@@ -1,0 +1,64 @@
+
+====================================================================
+2. Comment rendre le "Paiement par Numéro" PRO ?
+
+Puisque tu n'as pas encore accès aux API, on va tricher intelligemment. Voici comment rendre un paiement manuel par numéro de téléphone crédible et professionnel pour ta V3 :
+
+L'idée : Le flux "Preuve de Paiement"
+
+L'utilisateur choisit son plan.
+
+La modal affiche tes numéros (M-Pesa, Airtel Money) avec un bouton "Copier le numéro".
+
+L'utilisateur fait son transfert.
+
+Le plus important : Tu ajoutes un champ où il doit entrer la Référence de la transaction (l'ID qu'il reçoit par SMS) ou uploader une capture d'écran.
+
+Dans ton Dashboard, le compte passe en statut "En attente de validation".
+
+Toi, tu vérifies ton téléphone, et tu cliques sur un bouton dans ton interface Admin pour passer l'utilisateur en PRO.
+
+3. Roadmap : Qu'est-ce qu'on améliore en Version 3 ?
+
+Pour que BioLink RDC passe au niveau supérieur (SaaS de classe mondiale), voici les 4 piliers de la V3 :
+
+Pilier A : L'Upload d'Images (Priorité n°1)
+
+Actuellement, les gens utilisent des images par défaut.
+
+Amélioration : Connecter Supabase Storage.
+
+Fonctionnalité : L'utilisateur clique sur son avatar, choisit une photo dans sa galerie, et elle est mise à jour instantanément.
+
+aussi faire en sorte que en mode premium on ai la possibilite de mettre notre photo en fond d'ecran et meme en partageant on voit notre photo pro , notre nom et qui on est (une presentation breve )
+
+Pilier B : L'Interface Administrateur (Ton centre de contrôle)
+
+Tu as besoin d'une page secrète (ex: /admin-overcome) accessible uniquement par toi.
+
+Fonctionnalité : Voir la liste de tous les inscrits, voir qui a envoyé une preuve de paiement, et un bouton pour activer le mode PRO d'un utilisateur d'un seul clic.
+
+Pilier C : Les "Smart Links" (Liens Intelligents)
+
+Rendre les liens plus puissants pour justifier le prix PRO.
+
+Lien Prioritaire : Un lien qui bouge (animation de vibration) pour attirer les clics.
+
+Lien Protégé : Un lien qui demande un mot de passe (ex: pour vendre un document privé).
+
+Planification : Programmer un lien pour qu'il apparaisse seulement le week-end.
+
+Pilier D : Analytics Avancés
+
+Passer des graphiques simples à des données stratégiques.
+
+Géolocalisation : Savoir si les clics viennent de Kinshasa, Lubumbashi ou de l'étranger.
+
+Referrer : Savoir si les gens arrivent depuis TikTok, Instagram ou Facebook.
+
+Ma suggestion pour demain :
+
+On commence par l'Upload de Photo de Profil. C'est ce qui rendra ton site "réel" pour les utilisateurs. Ils pourront enfin mettre leur propre visage.
+
+Es-tu prêt à attaquer l'Upload d'images via Supabase Storage ? (C'est un peu technique mais je vais tout te donner étape par étape).
+

@@ -120,9 +120,3 @@ src/
 ## 📄 Licence
 
 MIT License.
-
----
-
-*Fait avec ❤️ pour l’Afrique et le monde.*
-
-

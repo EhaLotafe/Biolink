@@ -188,6 +188,16 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdateUser, onLogout }) =
       showToast("Erreur thème", "error");
     }
   };
+  
+// Ajoute cette petite fonction utilitaire en dehors du composant pour les initiales
+const getInitials = (name: string) => {
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+};
 
   return (
     <div className="flex h-screen bg-[#030712] text-slate-200 overflow-hidden font-sans selection:bg-indigo-500/30">
@@ -215,28 +225,68 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onUpdateUser, onLogout }) =
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto p-4 md:p-10 relative z-10">
-        <header className="max-w-4xl mx-auto flex justify-between items-center mb-12 animate-in slide-in-from-top-4 duration-500">
-          <div>
-            <h1 className="text-3xl font-black text-white tracking-tighter capitalize flex items-center gap-3">
-              {activeTab}
-              {user.is_premium && (
-                <div className="flex items-center gap-1 bg-indigo-500/20 text-indigo-400 text-[9px] font-black px-2 py-0.5 rounded-full border border-indigo-500/30 uppercase tracking-widest">
-                  <Star size={8} fill="currentColor" /> Pro
+          <main className="flex-1 overflow-y-auto p-4 md:p-10 relative z-10">
+            <header className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12 animate-in slide-in-from-top-4 duration-700">
+              
+              <div className="flex items-center gap-4">
+                {/* Avatar ou Initiales Dynamiques */}
+                <div className="relative group">
+                  <div className="absolute -inset-1 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+                  {user.avatarUrl ? (
+                    <img 
+                      src={user.avatarUrl} 
+                      alt={user.displayName} 
+                      className="relative w-14 h-14 rounded-2xl object-cover border border-white/10 shadow-2xl"
+                    />
+                  ) : (
+                    <div className="relative w-14 h-14 rounded-2xl bg-[#152C52] border border-white/10 flex items-center justify-center font-black text-indigo-400 text-xl shadow-2xl">
+                      {getInitials(user.displayName || user.username)}
+                    </div>
+                  )}
+                  {user.is_premium && (
+                    <div className="absolute -top-2 -right-2 bg-indigo-500 rounded-full p-1 shadow-lg border-2 border-[#030712]">
+                      <Star size={10} fill="white" className="text-white" />
+                    </div>
+                  )}
                 </div>
-              )}
-            </h1>
-            <p className="text-slate-400 text-sm font-medium">BioLink.cd • Dashboard</p>
-          </div>
-          
-          <button 
-            onClick={() => window.open(`/#/u/${user.username}`, '_blank')}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-white/20 transition-all text-xs font-black uppercase tracking-widest shadow-xl"
-            title="Aperçu public"
-          >
-            Ma Page <ExternalLink size={14} className="text-indigo-400" />
-          </button>
-        </header>
+
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-black text-white tracking-tighter">
+                      {new Date().getHours() < 18 ? 'Bonjour' : 'Bonsoir'}, {user.displayName?.split(' ')[0] || user.username} !
+                    </h1>
+                  </div>
+                  <div className="flex items-center gap-3 mt-1">
+                    <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">
+                      {activeTab === 'links' ? `${user.links.length} liens actifs` : `Onglet ${activeTab}`}
+                    </p>
+                    <div className="w-1 h-1 rounded-full bg-slate-700" />
+                    <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">
+                      @{user.username}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <button 
+                  onClick={() => window.open(`/#/u/${user.username}`, '_blank')}
+                  className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all text-[11px] font-black uppercase tracking-[0.2em] text-slate-300"
+                  title="Voir mon profil public"
+                >
+                  Aperçu <ExternalLink size={14} className="text-indigo-500" />
+                </button>
+                
+                {/* Bouton Partage Rapide (Optionnel) */}
+                <button 
+                  onClick={() => setShowQR(true)}
+                  className="p-3 bg-indigo-600/10 border border-indigo-500/20 rounded-2xl text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all shadow-lg shadow-indigo-500/10"
+                  title="Mon QR Code"
+                >
+                  <QrCode size={18} />
+                </button>
+              </div>
+            </header>
 
         <div className="max-w-4xl mx-auto pb-20">
           
