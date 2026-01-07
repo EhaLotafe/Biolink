@@ -19,7 +19,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const { showToast } = useNotify(); 
   const navigate = useNavigate();
 
-  // SEO & UX : Titre de l'onglet
+  // SEO & UX : Titre de l'onglet dynamique
   useEffect(() => {
     document.title = "Connexion | BioLink.cd";
   }, []);
@@ -62,15 +62,20 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   const handleGoogleLogin = async () => {
     try {
+      setLoading(true);
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`
+          // ✅ REDIRECTION DYNAMIQUE : 
+          // window.location.origin renverra https://biolinkweb.netlify.app en ligne
+          // et http://localhost:5173 en local. 
+          redirectTo: window.location.origin
         }
       });
       if (error) throw error;
     } catch (error: any) {
       showToast(error.message, "error");
+      setLoading(false);
     }
   };
 
@@ -87,7 +92,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md bg-[#0B1D3A]/40 backdrop-blur-2xl border border-white/10 rounded-[40px] p-8 md:p-12 shadow-2xl relative z-10"
       >
-        {/* Header */}
+        {/* Header Branding */}
         <div className="flex flex-col items-center mb-12">
           <Link to="/" className="group mb-6">
             <div className="w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/30 group-hover:scale-110 transition-transform duration-300">
@@ -124,7 +129,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <div className="space-y-2">
             <div className="flex justify-between items-center px-1">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Mot de passe</label>
-              {/* CORRECTION : Suppression de name="forgot-password" qui causait l'erreur */}
               <Link 
                 to="/reset-password" 
                 className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-widest"
@@ -149,14 +153,14 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
-                aria-label={showPassword ? "Cacher le mot de passe" : "Afficher le mot de passe"}
+                aria-label={showPassword ? "Cacher" : "Afficher"}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
-          {/* Submit */}
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
@@ -180,19 +184,20 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <div className="h-[1px] flex-1 bg-white/10" />
         </div>
 
-        {/* Social */}
+        {/* Social Login Button */}
         <button
           type="button"
           onClick={handleGoogleLogin}
-          className="w-full flex items-center justify-center gap-3 bg-white text-black font-black py-4 rounded-2xl hover:bg-slate-100 transition-all shadow-lg active:scale-[0.98]"
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-3 bg-white text-black font-black py-4 rounded-2xl hover:bg-slate-100 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50"
         >
           <Chrome size={20} />
           Continuer avec Google
         </button>
 
-        {/* Footer */}
+        {/* Footer Navigation */}
         <div className="mt-12 text-center">
-          <p className="text-slate-500 text-sm font-medium">
+          <p className="text-slate-500 text-sm font-medium tracking-tight">
             Pas encore de compte ?{" "}
             <Link 
                 to="/register" 

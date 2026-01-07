@@ -1,5 +1,5 @@
 // App.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useParams, Link } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 import { UserProfile } from './types';
@@ -11,7 +11,7 @@ import Register from './components/Register';
 import Landing from './components/Landing';
 import PublicProfile from './components/PublicProfile';
 import About from './components/About';
-import LegalPages from './components/LegalPages'; // ✅ Import unique corrigé
+import LegalPages from './components/LegalPages';
 import { useNotify } from './components/ToastContext';
 
 function App() {
@@ -20,29 +20,8 @@ function App() {
   const [loading, setLoading] = useState(true);
   const { showToast } = useNotify();
 
-  useEffect(() => {
-    // 1. Vérifier la session actuelle au démarrage
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) fetchUserProfile(session.user.id);
-      else setLoading(false);
-    });
-
-    // 2. Écouter les changements d'auth (Login/Logout)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) {
-        fetchUserProfile(session.user.id);
-      } else {
-        setUser(null);
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchUserProfile = async (userId: string) => {
+  // Stabilisation de la fonction de récupération du profil
+  const fetchUserProfile = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('users')
@@ -64,15 +43,40 @@ function App() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // 1. Vérifier la session actuelle au démarrage
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) {
+        fetchUserProfile(session.user.id);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    // 2. Écouter les changements d'auth (Login/Logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) {
+        fetchUserProfile(session.user.id);
+      } else {
+        setUser(null);
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [fetchUserProfile]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     showToast("À bientôt !", "info");
   };
 
-  // Splash Screen 2026
-  if (loading) {
+  // Splash Screen initial (chargement de l'application)
+  if (loading && !session) {
     return (
       <div className="h-screen w-full bg-[#030712] flex flex-col items-center justify-center">
         <div className="relative">
@@ -90,50 +94,65 @@ function App() {
         {/* Routes Publiques */}
         <Route path="/" element={<Landing />} />
         <Route path="/about" element={<About />} />
-        
-        {/* ✅ Les deux routes pointent vers le composant unifié LegalPages */}
         <Route path="/terms" element={<LegalPages />} />
         <Route path="/privacy" element={<LegalPages />} />
-
-        {/* Profil Public Dynamique */}
         <Route path="/u/:username" element={<PublicProfileLoader />} />
 
-        {/* Routes Auth */}
+        {/* Routes Auth : Redirige vers dashboard seulement si session ET profil sont prêts */}
         <Route
           path="/login"
-          element={session ? <Navigate to="/dashboard" /> : <Login onLogin={() => {}} />}
+          element={
+            session && user ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <Login onLogin={() => {}} />
+            )
+          }
         />
 
         <Route
           path="/register"
-          element={session ? <Navigate to="/dashboard" /> : <Register onLogin={() => {}} />}
+          element={
+            session && user ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <Register onLogin={() => {}} />
+            )
+          }
         />
 
         {/* Dashboard Protégé */}
         <Route
           path="/dashboard"
           element={
-            session && user ? (
-              <Dashboard
-                user={user}
-                onUpdateUser={(u) => setUser(u)}
-                onLogout={handleLogout}
-              />
+            session ? (
+              user ? (
+                <Dashboard
+                  user={user}
+                  onUpdateUser={(u) => setUser(u)}
+                  onLogout={handleLogout}
+                />
+              ) : (
+                // Session OK mais profil en cours de fetch : évite la boucle de redirection
+                <div className="h-screen w-full bg-[#030712] flex items-center justify-center">
+                   <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              )
             ) : (
-              <Navigate to="/login" />
+              <Navigate to="/login" replace />
             )
           }
         />
         
-        {/* Redirection 404 */}
-        <Route path="*" element={<Navigate to="/" />} />
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );
 }
 
 /**
- * Loader pour les profils publics (/u/username)
+ * Chargeur dynamique pour les profils publics (/u/username)
  */
 const PublicProfileLoader = () => {
   const { username } = useParams();

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import { useNotify } from "./ToastContext"; // On utilise le context global
+import { useNotify } from "./ToastContext"; 
 import { Eye, EyeOff, User, AtSign, Mail, Lock, Check, X, Loader2, ArrowRight, Chrome, Facebook } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -35,7 +35,7 @@ const Register: React.FC<RegisterProps> = ({ onLogin }) => {
     document.title = "Créer un compte | BioLink.cd";
   }, []);
 
-  // 1. Calcul de la force du mot de passe (Visuel)
+  // 1. Calcul de la force du mot de passe
   useEffect(() => {
     const pwd = formData.password;
     let strength = 0;
@@ -47,7 +47,7 @@ const Register: React.FC<RegisterProps> = ({ onLogin }) => {
     setPasswordStrength(strength);
   }, [formData.password]);
 
-  // 2. Vérification en temps réel de la disponibilité du pseudo
+  // 2. Vérification live du pseudo
   useEffect(() => {
     const check = async () => {
       const u = formData.username.trim().toLowerCase();
@@ -56,7 +56,6 @@ const Register: React.FC<RegisterProps> = ({ onLogin }) => {
         return;
       }
       setCheckingUsername(true);
-      // On vérifie dans la table 'users' que nous avons créée ensemble
       const { data } = await supabase.from("users").select("id").eq("username", u).maybeSingle();
       setUsernameAvailable(!data);
       setCheckingUsername(false);
@@ -81,7 +80,7 @@ const Register: React.FC<RegisterProps> = ({ onLogin }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) {
-      showToast("Veuillez corriger les erreurs dans le formulaire.", "warning");
+      showToast("Veuillez corriger les erreurs.", "warning");
       return;
     }
 
@@ -92,22 +91,22 @@ const Register: React.FC<RegisterProps> = ({ onLogin }) => {
         password: formData.password,
         options: {
           data: {
-            display_name: formData.name, // Sera utilisé par le trigger SQL
-            username: formData.username.trim().toLowerCase(), // Sera utilisé par le trigger SQL
+            display_name: formData.name,
+            username: formData.username.trim().toLowerCase(),
           },
-          emailRedirectTo: `${window.location.origin}/dashboard`,
+          // ✅ REDIRECTION DYNAMIQUE : On renvoie vers la racine du site
+          // L'App.tsx se chargera de rediriger vers /dashboard une fois connecté
+          emailRedirectTo: window.location.origin,
         },
       });
 
       if (error) throw error;
 
       if (data.user) {
-        // Cas 1: Confirmation email requise
         if (data.session === null) {
           showToast("Inscription réussie ! Vérifiez vos emails pour activer votre compte.", "success");
           navigate("/login");
         } else {
-          // Cas 2: Connexion automatique
           showToast("Bienvenue sur BioLink.cd ! ✨", "success");
           onLogin();
         }
@@ -121,13 +120,18 @@ const Register: React.FC<RegisterProps> = ({ onLogin }) => {
 
   const handleSocialLogin = async (provider: "google" | "facebook") => {
     try {
+      setLoading(true);
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${window.location.origin}/dashboard` }
+        options: { 
+          // ✅ REDIRECTION DYNAMIQUE : Marche pour Localhost et Netlify
+          redirectTo: window.location.origin 
+        }
       });
       if (error) throw error;
     } catch (err: any) {
       showToast(`Erreur ${provider}: ${err.message}`, "error");
+      setLoading(false);
     }
   };
 
@@ -135,8 +139,8 @@ const Register: React.FC<RegisterProps> = ({ onLogin }) => {
     <div className="min-h-screen bg-[#030712] flex items-center justify-center p-6 relative overflow-hidden font-sans">
       
       {/* Background Decor */}
-      <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
 
       <motion.div 
         initial={{ opacity: 0, scale: 0.98 }}
@@ -147,11 +151,11 @@ const Register: React.FC<RegisterProps> = ({ onLogin }) => {
         <div className="flex flex-col items-center mb-10">
           <Link to="/" className="mb-6">
             <div className="w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/20 group hover:scale-110 transition-transform">
-              <span className="font-black text-white text-2xl font-sans">B</span>
+              <span className="font-black text-white text-2xl">B</span>
             </div>
           </Link>
           <h1 className="text-3xl font-black text-white tracking-tighter">BioLink<span className="text-indigo-500">.cd</span></h1>
-          <p className="text-slate-400 text-sm mt-2 font-medium">Rejoignez le n°1 du Link-in-Bio en RDC</p>
+          <p className="text-slate-400 text-sm mt-2 font-medium text-center">Rejoignez le n°1 du Link-in-Bio en RDC</p>
         </div>
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -168,6 +172,7 @@ const Register: React.FC<RegisterProps> = ({ onLogin }) => {
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className={`w-full pl-12 pr-4 py-4 rounded-2xl bg-white/5 border ${errors.name ? 'border-red-500/50' : 'border-white/10'} text-white outline-none focus:border-indigo-500/50 transition-all`}
                 required
+                disabled={loading}
               />
             </div>
           </div>
@@ -184,6 +189,7 @@ const Register: React.FC<RegisterProps> = ({ onLogin }) => {
                 onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase() })}
                 className={`w-full pl-12 pr-10 py-4 rounded-2xl bg-white/5 border ${errors.username ? 'border-red-500/50' : 'border-white/10'} text-white outline-none focus:border-indigo-500/50 transition-all font-bold`}
                 required
+                disabled={loading}
               />
               <div className="absolute right-4 top-1/2 -translate-y-1/2">
                 {checkingUsername ? <Loader2 size={16} className="text-indigo-400 animate-spin" /> : 
@@ -206,6 +212,7 @@ const Register: React.FC<RegisterProps> = ({ onLogin }) => {
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className={`w-full pl-12 pr-4 py-4 rounded-2xl bg-white/5 border ${errors.email ? 'border-red-500/50' : 'border-white/10'} text-white outline-none focus:border-indigo-500/50 transition-all`}
                 required
+                disabled={loading}
               />
             </div>
           </div>
@@ -222,12 +229,12 @@ const Register: React.FC<RegisterProps> = ({ onLogin }) => {
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 className={`w-full pl-12 pr-10 py-4 rounded-2xl bg-white/5 border ${errors.password ? 'border-red-500/50' : 'border-white/10'} text-white outline-none focus:border-indigo-500/50 transition-all`}
                 required
+                disabled={loading}
               />
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors">
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-            {/* Barre de force animée */}
             <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden mt-2">
               <motion.div 
                 initial={{ width: 0 }}
@@ -249,6 +256,7 @@ const Register: React.FC<RegisterProps> = ({ onLogin }) => {
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                 className={`w-full pl-12 pr-10 py-4 rounded-2xl bg-white/5 border ${errors.confirmPassword ? 'border-red-500/50' : 'border-white/10'} text-white outline-none focus:border-indigo-500/50 transition-all`}
                 required
+                disabled={loading}
               />
               <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors">
                 {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -272,10 +280,10 @@ const Register: React.FC<RegisterProps> = ({ onLogin }) => {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <button onClick={() => handleSocialLogin("google")} className="flex items-center justify-center gap-3 bg-white text-black font-black p-4 rounded-2xl text-sm hover:bg-slate-100 transition-all shadow-lg active:scale-95">
+          <button type="button" onClick={() => handleSocialLogin("google")} disabled={loading} className="flex items-center justify-center gap-3 bg-white text-black font-black p-4 rounded-2xl text-sm hover:bg-slate-100 transition-all shadow-lg active:scale-95 disabled:opacity-50">
             <Chrome size={18} /> Google
           </button>
-          <button onClick={() => handleSocialLogin("facebook")} className="flex items-center justify-center gap-3 bg-[#1877F2] text-white font-black p-4 rounded-2xl text-sm hover:bg-[#1877F2]/90 transition-all shadow-lg active:scale-95">
+          <button type="button" onClick={() => handleSocialLogin("facebook")} disabled={loading} className="flex items-center justify-center gap-3 bg-[#1877F2] text-white font-black p-4 rounded-2xl text-sm hover:bg-[#1877F2]/90 transition-all shadow-lg active:scale-95 disabled:opacity-50">
             <Facebook size={18} /> Facebook
           </button>
         </div>

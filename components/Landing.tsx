@@ -245,7 +245,7 @@ const Landing: React.FC = () => {
 
         <div className="max-w-7xl mx-auto mt-20 pt-8 border-t border-white/5 text-center">
            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-[0.3em]">
-             © 2026 BioLink RDC • Fait à Kinshasa avec ❤️
+             © 2026 BioLink RDC • Fait à Lubumbashi
            </p>
         </div>
       </footer>

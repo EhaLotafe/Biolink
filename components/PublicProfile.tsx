@@ -4,8 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { UserProfile, LinkItem } from '../types';
 import { THEMES } from '../constants';
 import { Icon } from './Icons';
-import { Share2, Check, ExternalLink, MessageCircle } from 'lucide-react';
+import { Share2, Check, ExternalLink, MessageCircle, QrCode } from 'lucide-react'; // Ajout de QrCode
 import { supabase } from '../supabaseClient';
+import QRCodeModal from './QRCodeModal'; // Import de la modal QR
 
 interface PublicProfileProps {
   user: UserProfile;
@@ -15,6 +16,7 @@ interface PublicProfileProps {
 const PublicProfile: React.FC<PublicProfileProps> = ({ user, previewMode = false }) => {
   const theme = THEMES.find(t => t.id === user.themeId) || THEMES[0];
   const [copied, setCopied] = useState(false);
+  const [showQR, setShowQR] = useState(false); // État pour afficher le QR Code
 
   // 1. TRACKING RÉEL DES VUES
   useEffect(() => {
@@ -90,19 +92,28 @@ const PublicProfile: React.FC<PublicProfileProps> = ({ user, previewMode = false
     }
   };
 
-  // On cherche un lien WhatsApp pour le bouton flottant
   const whatsappLink = user.links.find(l => l.icon === 'whatsapp' && l.active);
 
   return (
     <div className={`min-h-full w-full flex flex-col items-center ${theme.bgClass} ${theme.textClass} transition-colors duration-500 overflow-y-auto relative font-sans selection:bg-indigo-500/30`}>
       
-      {/* Bouton Partage Flottant */}
+      {/* Barre d'outils supérieure (QR + Partage) */}
       {!previewMode && (
-        <div className="absolute top-6 right-6 z-30">
+        <div className="absolute top-6 right-6 z-30 flex gap-2">
+          {/* Bouton QR Code */}
+          <button
+            onClick={() => setShowQR(true)}
+            aria-label="Afficher le QR Code"
+            className="p-3 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-full hover:bg-white/20 transition-all shadow-xl active:scale-90 text-white"
+          >
+            <QrCode size={20} />
+          </button>
+
+          {/* Bouton Partage */}
           <button
             onClick={handleShare}
             aria-label="Partager le profil"
-            className="p-3 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-full hover:bg-white/20 transition-all shadow-xl active:scale-90"
+            className="p-3 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-full hover:bg-white/20 transition-all shadow-xl active:scale-90 text-white"
           >
             {copied ? <Check size={20} className="text-emerald-400" /> : <Share2 size={20} />}
           </button>
@@ -132,7 +143,7 @@ const PublicProfile: React.FC<PublicProfileProps> = ({ user, previewMode = false
           </div>
 
           <div className="space-y-2">
-            <h1 className="text-3xl font-black tracking-tighter flex items-center justify-center gap-2">
+            <h1 className="text-3xl font-black tracking-tighter flex items-center justify-center gap-2 text-white">
               {user.displayName}
               {user.verified && (
                 <div className="bg-blue-500 rounded-full p-1 shadow-lg" title="Profil Vérifié Officiel">
@@ -148,7 +159,10 @@ const PublicProfile: React.FC<PublicProfileProps> = ({ user, previewMode = false
 
         {/* Links Stack */}
         <div className="w-full flex flex-col gap-4">
-          {user.links.filter(l => l.active).sort((a,b) => a.position - b.position).map((link, index) => (
+          {user.links
+            .filter(l => l.active)
+            .sort((a,b) => a.position - b.position)
+            .map((link, index) => (
             <motion.a
               key={link.id}
               href={link.url}
@@ -165,23 +179,22 @@ const PublicProfile: React.FC<PublicProfileProps> = ({ user, previewMode = false
                           ${theme.buttonClass} 
                           ${link.is_priority ? 'ring-2 ring-indigo-500/50 shadow-indigo-500/20' : ''}`}
             >
-              {/* Animation pour liens prioritaires (Monétisation) */}
               {link.is_priority && (
                 <span className="absolute inset-0 rounded-2xl bg-indigo-500/10 animate-pulse pointer-events-none" />
               )}
 
               <div className="flex items-center gap-4 relative z-10">
-                <div className="p-2.5 rounded-xl bg-white/5 group-hover:bg-white/10 transition-colors">
+                <div className="p-2.5 rounded-xl bg-white/5 group-hover:bg-white/10 transition-colors text-white">
                   <Icon name={link.icon} className={`w-5 h-5 ${theme.accentClass}`} />
                 </div>
-                <span className="font-bold text-[15px] tracking-tight">{link.title}</span>
+                <span className="font-bold text-[15px] tracking-tight text-white">{link.title}</span>
               </div>
-              <ExternalLink size={14} className="opacity-20 group-hover:opacity-100 transition-all mr-2" />
+              <ExternalLink size={14} className="opacity-20 group-hover:opacity-100 transition-all mr-2 text-white" />
             </motion.a>
           ))}
         </div>
 
-        {/* Footer Branding (Tunnel de vente discret) */}
+        {/* Footer Branding */}
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -197,14 +210,14 @@ const PublicProfile: React.FC<PublicProfileProps> = ({ user, previewMode = false
               <span className="text-white text-[10px] font-black">B</span>
             </div>
             <div className="text-left">
-              <p className="text-[10px] font-black tracking-widest uppercase opacity-40">Créer mon</p>
-              <p className="text-xs font-bold tracking-tighter opacity-80 group-hover:text-indigo-400 transition-colors">BioLink RDC</p>
+              <p className="text-[10px] font-black tracking-widest uppercase opacity-40 text-white">Créer mon</p>
+              <p className="text-xs font-bold tracking-tighter opacity-80 group-hover:text-indigo-400 transition-colors text-white">BioLink RDC</p>
             </div>
           </button>
         </motion.div>
       </div>
 
-      {/* Bouton WhatsApp Flottant (Indispensable pour le business en RDC) */}
+      {/* WhatsApp Floating Button */}
       <AnimatePresence>
         {whatsappLink && !previewMode && (
           <motion.a
@@ -217,14 +230,18 @@ const PublicProfile: React.FC<PublicProfileProps> = ({ user, previewMode = false
             className="fixed bottom-8 right-8 p-4 bg-[#25D366] text-white rounded-full shadow-[0_10px_30px_rgba(37,211,102,0.4)] z-50 group"
           >
             <MessageCircle size={28} fill="white" />
-            <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-black/80 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-              Discuter sur WhatsApp
-            </span>
           </motion.a>
         )}
       </AnimatePresence>
 
-      {/* Décoration de fond Premium */}
+      {/* Modals */}
+      <QRCodeModal 
+        url={window.location.href} 
+        isOpen={showQR} 
+        onClose={() => setShowQR(false)} 
+      />
+
+      {/* Background Decor */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-[-20%] left-[-10%] w-[80%] h-[80%] bg-indigo-600/5 rounded-full blur-[120px] animate-pulse" />
         <div className="absolute bottom-[-20%] right-[-10%] w-[80%] h-[80%] bg-purple-600/5 rounded-full blur-[120px]" />
