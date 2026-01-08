@@ -16,7 +16,6 @@ import { useNotify } from './components/ToastContext';
 import AdminPanel from './components/AdminPanel';
 
 
-
 function App() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<any>(null);
@@ -92,73 +91,80 @@ function App() {
     );
   }
 
-  return (
-    <Router>
-      <Routes>      
-              <Route 
+  // App.tsx
+
+// ... reste du code identique
+
+return (
+  <Router>
+    <Routes>      
+      {/* Route Admin (Seulement pour toi) */}
+      <Route 
         path="/admin-overcome" 
         element={
           session?.user.id === ADMIN_ID ? <AdminPanel /> : <Navigate to="/" />
         } 
       />
-        {/* Routes Publiques */}
-        <Route path="/" element={<Landing />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/terms" element={<LegalPages />} />
-        <Route path="/privacy" element={<LegalPages />} />
-        <Route path="/u/:username" element={<PublicProfileLoader />} />
 
-        {/* Routes Auth : Redirige vers dashboard seulement si session ET profil sont prêts */}
-        <Route
-          path="/login"
-          element={
-            session && user ? (
-              <Navigate to="/dashboard" replace />
-            ) : (
-              <Login onLogin={() => {}} />
-            )
-          }
-        />
+      {/* Routes Publiques */}
+      <Route path="/" element={<Landing />} />
+      <Route path="/about" element={<About />} />
+      <Route path="/terms" element={<LegalPages />} />
+      <Route path="/privacy" element={<LegalPages />} />
+      <Route path="/u/:username" element={<PublicProfileLoader />} />
 
-        <Route
-          path="/register"
-          element={
-            session && user ? (
-              <Navigate to="/dashboard" replace />
-            ) : (
-              <Register onLogin={() => {}} />
-            )
-          }
-        />
+      {/* 
+          MODIFICATION ICI : 
+          Si session + user existent, on redirige selon l'ID 
+      */}
+      <Route
+        path="/login"
+        element={
+          session && user ? (
+            <Navigate to={session.user.id === ADMIN_ID ? "/admin-overcome" : "/dashboard"} replace />
+          ) : (
+            <Login onLogin={() => {}} />
+          )
+        }
+      />
 
-        {/* Dashboard Protégé */}
-        <Route
-          path="/dashboard"
-          element={
-            session ? (
-              user ? (
-                <Dashboard
-                  user={user}
-                  onUpdateUser={(u) => setUser(u)}
-                  onLogout={handleLogout}
-                />
-              ) : (
-                // Session OK mais profil en cours de fetch : évite la boucle de redirection
-                <div className="h-screen w-full bg-[#030712] flex items-center justify-center">
-                   <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                </div>
-              )
+      <Route
+        path="/register"
+        element={
+          session && user ? (
+            <Navigate to={session.user.id === ADMIN_ID ? "/admin-overcome" : "/dashboard"} replace />
+          ) : (
+            <Register onLogin={() => {}} />
+          )
+        }
+      />
+
+      {/* Dashboard Protégé */}
+      <Route
+        path="/dashboard"
+        element={
+          session ? (
+            user ? (
+              <Dashboard
+                user={user}
+                onUpdateUser={(u) => setUser(u)}
+                onLogout={handleLogout}
+              />
             ) : (
-              <Navigate to="/login" replace />
+              <div className="h-screen w-full bg-[#030712] flex items-center justify-center">
+                 <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+              </div>
             )
-          }
-        />
-        
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
-  );
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+      
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  </Router>
+);
 }
 
 /**
